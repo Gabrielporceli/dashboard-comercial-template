@@ -146,11 +146,27 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Erro na sincronização:", error);
       const errorMessage = error instanceof Error ? error.message : "Não foi possível buscar os leads";
-      toast({
-        title: "Erro na sincronização",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      
+      // Verifica se o erro é "No item to return was found" - significa que não há leads
+      const isNoItemsError = errorMessage.includes("No item to return was found") || 
+                             errorMessage.includes("500");
+      
+      if (isNoItemsError) {
+        // Trata como sucesso com 0 leads
+        setLeads([]);
+        setLastSync(new Date());
+        toast({
+          title: "Sincronizado",
+          description: "Nenhum lead encontrado na planilha no momento.",
+          className: "bg-muted text-foreground"
+        });
+      } else {
+        toast({
+          title: "Erro na sincronização",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsSyncing(false);
     }
