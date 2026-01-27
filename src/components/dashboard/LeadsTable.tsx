@@ -74,7 +74,7 @@ export const LeadsTable = ({ leads, onLeadClick, onQualify, onDisqualify }: Lead
           <TableRow>
             <TableHead>Status</TableHead>
             <TableHead>Plataforma</TableHead>
-            <TableHead>Data/Hora</TableHead>
+            <TableHead>Data</TableHead>
             <TableHead>Nome</TableHead>
             <TableHead>Telefone</TableHead>
             <TableHead>Atendimento N°</TableHead>
@@ -97,7 +97,7 @@ export const LeadsTable = ({ leads, onLeadClick, onQualify, onDisqualify }: Lead
               </TableCell>
               <TableCell>{getPlatformText(lead.platform)}</TableCell>
               <TableCell className="text-sm text-muted-foreground">
-                {format(new Date(lead.event_time), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                {format(new Date(lead.event_time), "dd/MM/yyyy", { locale: ptBR })}
               </TableCell>
               <TableCell className="font-medium">{lead.name}</TableCell>
               <TableCell className="text-sm">{lead.phone_number}</TableCell>
