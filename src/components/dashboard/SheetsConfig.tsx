@@ -126,7 +126,7 @@ export const SheetsConfig = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className="liquid-glass border-white/20 bg-white/5 hover:bg-white/10">
           <Settings className="h-4 w-4 mr-2" />
           Configurar n8n
         </Button>

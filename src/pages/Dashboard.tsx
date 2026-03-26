@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, Clock } from "lucide-react";
 import goatBlack from "@/assets/goat-black.png";
 import goatWhite from "@/assets/goat-white.png";
+import { TiltWrapper } from "@/components/ui/TiltWrapper";
 
 const Dashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -349,7 +350,7 @@ const Dashboard = () => {
                 <Button
                   onClick={syncWithSheets}
                   disabled={isSyncing || !webhookConfig}
-                  className="bg-goat-purple hover:bg-purple-600 shadow-lg shadow-purple-900/20"
+                  className="liquid-glass bg-goat-purple/60 hover:bg-goat-purple/80 border-white/20"
                 >
                   <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
                   Sincronizar
@@ -374,25 +375,29 @@ const Dashboard = () => {
 
         {/* Content Section */}
         <div className="space-y-6 animate-fade-in" style={{ animationDelay: '200ms' }}>
-          <div className="liquid-glass p-1 rounded-[2rem]">
-            <LeadFilters
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              platformFilter={platformFilter}
-              onPlatformChange={setPlatformFilter}
-              statusFilter={statusFilter}
-              onStatusChange={setStatusFilter}
-            />
-          </div>
+          <TiltWrapper intensity={5}>
+            <div className="liquid-glass p-1 rounded-[2rem]">
+              <LeadFilters
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                platformFilter={platformFilter}
+                onPlatformChange={setPlatformFilter}
+                statusFilter={statusFilter}
+                onStatusChange={setStatusFilter}
+              />
+            </div>
+          </TiltWrapper>
         </div>
 
         {/* Table */}
-        <LeadsTable
-          leads={filteredLeads}
-          onLeadClick={handleLeadClick}
-          onQualify={handleQualify}
-          onDisqualify={handleDisqualify}
-        />
+        <TiltWrapper intensity={2} className="mt-6">
+          <LeadsTable
+            leads={filteredLeads}
+            onLeadClick={handleLeadClick}
+            onQualify={handleQualify}
+            onDisqualify={handleDisqualify}
+          />
+        </TiltWrapper>
 
         {/* Detail Modal */}
         <LeadDetailModal
