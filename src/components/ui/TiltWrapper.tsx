@@ -8,13 +8,14 @@ interface TiltWrapperProps {
   intensity?: number;
 }
 
-export const TiltWrapper = ({ children, className, intensity = 20 }: TiltWrapperProps) => {
+export const TiltWrapper = ({ children, className, intensity = 10 }: TiltWrapperProps) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  // Smooth the rotation with spring
-  const mouseXSpring = useSpring(x);
-  const mouseYSpring = useSpring(y);
+  // Smooth the rotation with spring - higher damping and lower stiffness for "suave" effect
+  const springConfig = { damping: 30, stiffness: 100 };
+  const mouseXSpring = useSpring(x, springConfig);
+  const mouseYSpring = useSpring(y, springConfig);
 
   const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [intensity, -intensity]);
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-intensity, intensity]);

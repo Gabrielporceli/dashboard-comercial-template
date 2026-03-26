@@ -49,7 +49,7 @@ export const MetricsCards = ({ leads }: MetricsCardsProps) => {
       {metrics.map((metric, index) => {
         const Icon = metric.icon;
         return (
-          <TiltWrapper key={index} intensity={10}>
+          <TiltWrapper key={index} intensity={6}>
             <Card className="dashboard-glow liquid-glass p-6 cursor-default">
               <div className="flex items-start justify-between">
                 <div>
