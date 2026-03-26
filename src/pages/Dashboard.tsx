@@ -375,7 +375,7 @@ const Dashboard = () => {
 
         {/* Content Section */}
         <div className="space-y-6 animate-fade-in" style={{ animationDelay: '200ms' }}>
-          <TiltWrapper intensity={5}>
+          <TiltWrapper intensity={12}>
             <div className="liquid-glass p-1 rounded-[2rem]">
               <LeadFilters
                 searchTerm={searchTerm}
@@ -390,7 +390,7 @@ const Dashboard = () => {
         </div>
 
         {/* Table */}
-        <TiltWrapper intensity={2} className="mt-6">
+        <TiltWrapper intensity={8} className="mt-6">
           <LeadsTable
             leads={filteredLeads}
             onLeadClick={handleLeadClick}

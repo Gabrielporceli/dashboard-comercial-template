@@ -158,6 +158,24 @@
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
   }
 
+  /* Dynamic Border Shine based on TiltWrapper variables */
+  .liquid-glass::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    mask-image: radial-gradient(120px circle at calc(var(--tilt-x, 50) * 1%) calc(var(--tilt-y, 50) * 1%), black 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(120px circle at calc(var(--tilt-x, 50) * 1%) calc(var(--tilt-y, 50) * 1%), black 20%, transparent 70%);
+  }
+
+  .liquid-glass:hover::after {
+    opacity: 1;
+  }
+
   /* Add noise texture to glass */
   .liquid-glass::before {
     content: "";
