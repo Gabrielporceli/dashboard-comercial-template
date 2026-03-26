@@ -375,18 +375,16 @@ const Dashboard = () => {
 
         {/* Content Section */}
         <div className="space-y-6 animate-fade-in" style={{ animationDelay: '200ms' }}>
-          <TiltWrapper intensity={12}>
-            <div className="liquid-glass p-1 rounded-[2rem]">
-              <LeadFilters
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                platformFilter={platformFilter}
-                onPlatformChange={setPlatformFilter}
-                statusFilter={statusFilter}
-                onStatusChange={setStatusFilter}
-              />
-            </div>
-          </TiltWrapper>
+          <div className="liquid-glass p-1 rounded-[2rem]">
+            <LeadFilters
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              platformFilter={platformFilter}
+              onPlatformChange={setPlatformFilter}
+              statusFilter={statusFilter}
+              onStatusChange={setStatusFilter}
+            />
+          </div>
         </div>
 
         {/* Table */}

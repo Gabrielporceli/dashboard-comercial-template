@@ -1,9 +1,9 @@
 'use client'
 import React from 'react';
-import { 
-  motion, 
-  useMotionValue, 
-  useTransform, 
+import {
+  motion,
+  useMotionValue,
+  useTransform,
   useSpring,
 } from 'framer-motion';
 import { cn } from "@/lib/utils";
@@ -17,17 +17,18 @@ interface TiltWrapperProps {
 export const TiltWrapper = ({ children, className, intensity = 10 }: TiltWrapperProps) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
+  const scale = useMotionValue(1);
 
-  // Smooth the rotation with spring - high damping and lower stiffness for "suave" effect
-  const springConfig = { damping: 35, stiffness: 100 };
-  const mouseXSpring = useSpring(x, springConfig);
-  const mouseYSpring = useSpring(y, springConfig);
+  // Física natural: stiffness alta para resposta rápida, damping baixo para bounce sutil, mass para inércia
+  const tiltSpring = { damping: 18, stiffness: 250, mass: 0.6 };
+  const mouseXSpring = useSpring(x, tiltSpring);
+  const mouseYSpring = useSpring(y, tiltSpring);
+  const scaleSpring = useSpring(scale, { damping: 22, stiffness: 320, mass: 0.4 });
 
-  // CORRECT DIRECTION: Hovered side comes TOWARDS the user
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [-intensity, intensity]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [intensity, -intensity]);
+  // Lado hovado afunda (efeito de peso)
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [intensity, -intensity]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-intensity, intensity]);
 
-  // OPPOSITE AXIS: Mapping [-0.5, 0.5] -> [100, 0] to move shine away from mouse
   const shineX = useTransform(mouseXSpring, [-0.5, 0.5], [100, 0]);
   const shineY = useTransform(mouseYSpring, [-0.5, 0.5], [100, 0]);
 
@@ -39,29 +40,38 @@ export const TiltWrapper = ({ children, className, intensity = 10 }: TiltWrapper
     y.set(yPct);
   };
 
+  const handleMouseEnter = () => {
+    scale.set(1.03);
+  };
+
   const handleMouseLeave = () => {
     x.set(0);
     y.set(0);
+    scale.set(1);
   };
 
   return (
-    <motion.div
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        rotateX,
-        rotateY,
-        transformStyle: "preserve-3d",
-        perspective: 1000,
-        // Passing JS variables to CSS
-        "--tilt-x": shineX,
-        "--tilt-y": shineY
-      } as any}
-      className={cn("relative group", className)}
-    >
-      <div style={{ transform: "translateZ(15px)", transformStyle: "preserve-3d" }} className="relative z-10 h-full w-full">
-        {children}
-      </div>
-    </motion.div>
+    // perspective no pai para distorção 3D correta
+    <div style={{ perspective: "1200px" }} className={cn("relative group", className)}>
+      <motion.div
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        style={{
+          rotateX,
+          rotateY,
+          scale: scaleSpring,
+          transformStyle: "preserve-3d",
+          willChange: "transform",
+          "--tilt-x": shineX,
+          "--tilt-y": shineY
+        } as any}
+        className="relative h-full w-full"
+      >
+        <div style={{ transform: "translateZ(20px)", transformStyle: "preserve-3d" }} className="relative z-10 h-full w-full">
+          {children}
+        </div>
+      </motion.div>
+    </div>
   );
 };
