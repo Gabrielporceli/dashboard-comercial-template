@@ -28,7 +28,7 @@ interface SheetsConfigProps {
   onUpdateInterval: (minutes: number) => void;
 }
 
-const PASSWORD = "Gab@21072000";
+const PASSWORD = "Abc@010203";
 
 export const SheetsConfig = ({ 
   onConfigSave, 

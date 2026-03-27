@@ -8,8 +8,7 @@ import { Lead, Platform, ConversionStatus } from "@/types/lead";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Clock } from "lucide-react";
-import goatBlack from "@/assets/goat-black.png";
-import goatWhite from "@/assets/goat-white.png";
+
 import { TiltWrapper } from "@/components/ui/TiltWrapper";
 
 const Dashboard = () => {
@@ -330,7 +329,7 @@ const Dashboard = () => {
         {/* Header */}
         <div className="mb-12">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <h1 className="text-4xl font-bold tracking-tight gradient-text">Porceli Company</h1>
+            <h1 className="text-4xl font-bold tracking-tight gradient-text">Painel Comercial | Porceli Tracking</h1>
             
             <div className="flex items-center flex-wrap gap-4">
               {lastSync && (
