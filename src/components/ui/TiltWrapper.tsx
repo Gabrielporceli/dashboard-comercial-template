@@ -14,7 +14,7 @@ interface TiltWrapperProps {
   intensity?: number;
 }
 
-export const TiltWrapper = ({ children, className, intensity = 10 }: TiltWrapperProps) => {
+export const TiltWrapper = ({ children, className, intensity = 3 }: TiltWrapperProps) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const scale = useMotionValue(1);
@@ -41,7 +41,7 @@ export const TiltWrapper = ({ children, className, intensity = 10 }: TiltWrapper
   };
 
   const handleMouseEnter = () => {
-    scale.set(1.03);
+    scale.set(1.01);
   };
 
   const handleMouseLeave = () => {
@@ -62,13 +62,14 @@ export const TiltWrapper = ({ children, className, intensity = 10 }: TiltWrapper
           rotateY,
           scale: scaleSpring,
           transformStyle: "preserve-3d",
-          willChange: "transform",
+          willChange: "auto",
+          backfaceVisibility: "hidden",
           "--tilt-x": shineX,
           "--tilt-y": shineY
         } as any}
         className="relative h-full w-full"
       >
-        <div style={{ transform: "translateZ(20px)", transformStyle: "preserve-3d" }} className="relative z-10 h-full w-full">
+        <div className="relative z-10 h-full w-full">
           {children}
         </div>
       </motion.div>

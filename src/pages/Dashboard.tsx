@@ -387,7 +387,7 @@ const Dashboard = () => {
         </div>
 
         {/* Table */}
-        <TiltWrapper intensity={8} className="mt-6">
+        <TiltWrapper className="mt-6">
           <LeadsTable
             leads={filteredLeads}
             onLeadClick={handleLeadClick}

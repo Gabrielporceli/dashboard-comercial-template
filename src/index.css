@@ -86,6 +86,12 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 144.1 61% 91%;
+
+    --warning: 38 92.2% 50%;
+    --warning-foreground: 48 96% 89%;
+
     --border: 0 0% 25%;
     --input: 0 0% 15%;
     --ring: 265 65% 46%;
@@ -149,13 +155,14 @@
   .liquid-glass {
     position: relative;
     overflow: hidden;
-    background: rgba(18, 18, 18, 0.2) !important; /* Much more transparent */
-    backdrop-filter: blur(40px) saturate(200%) brightness(1.2) !important; /* Increased blur and brightness */
-    -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.2) !important;
+    background: rgba(18, 18, 18, 0.5) !important; /* Slightly more opaque for better legibility */
+    backdrop-filter: blur(8px) saturate(160%) brightness(1.1) !important; /* Even subtler blur */
+    -webkit-backdrop-filter: blur(8px) saturate(160%) brightness(1.1) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
     border-radius: 2rem;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+    transform: translate3d(0, 0, 0); /* Force sharpness */
   }
 
   /* Dynamic Border Shine based on TiltWrapper variables */
@@ -176,21 +183,11 @@
     opacity: 1;
   }
 
-  /* Add noise texture to glass */
-  .liquid-glass::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: url("https://grainy-gradients.vercel.app/noise.svg");
-    opacity: 0.05;
-    pointer-events: none;
-    z-index: -1;
-  }
   /* Enhanced elements inside glass */
   .liquid-glass input,
   .liquid-glass select,
-  .liquid-glass button:not(.btn-primary) {
-    background: rgba(255, 255, 255, 0.05) !important;
+  .liquid-glass button:not(.btn-primary):not([role="switch"]) {
+    background: transparent !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
     backdrop-filter: blur(10px) !important;
     transition: all 0.3s ease !important;
