@@ -27,11 +27,15 @@ const AppContent = () => {
   );
 };
 
+import { MotionProvider } from "./contexts/MotionContext";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AppContent />
-    </TooltipProvider>
+    <MotionProvider>
+      <TooltipProvider>
+        <AppContent />
+      </TooltipProvider>
+    </MotionProvider>
   </QueryClientProvider>
 );
 

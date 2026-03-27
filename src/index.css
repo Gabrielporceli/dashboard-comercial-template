@@ -224,6 +224,17 @@
     @apply shadow-[0_20px_40px_-15px_#000000b3] border-primary/30 bg-white/[0.05];
     z-index: 10;
   }
+
+  /* Global Motion Toggle Overrides */
+  .disable-motion .dashboard-glow:hover {
+    transform: none !important;
+  }
+
+  .disable-motion .animate-fade-in,
+  .disable-motion [class*="animate-"] {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* Custom Scrollbar */

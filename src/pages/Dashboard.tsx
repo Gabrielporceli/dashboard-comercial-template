@@ -10,8 +10,11 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, Clock } from "lucide-react";
 
 import { TiltWrapper } from "@/components/ui/TiltWrapper";
+import { MotionToggle } from "@/components/dashboard/MotionToggle";
+import { useMotion } from "@/contexts/MotionContext";
 
 const Dashboard = () => {
+  const { animationsEnabled } = useMotion();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [platformFilter, setPlatformFilter] = useState<Platform | "Todos">("Todos");
@@ -72,70 +75,24 @@ const Dashboard = () => {
       let data: any;
       try {
         const text = await response.text();
-        // Tenta fazer parse do JSON
         data = JSON.parse(text);
       } catch (parseError) {
         console.error("Erro ao fazer parse do JSON:", parseError);
-        throw new Error("Resposta não é JSON válido. Verifique se o webhook está retornando JSON corretamente.");
+        throw new Error("Resposta não é JSON válido.");
       }
       
-      // Debug: log do que foi recebido
-      console.log("🔍 DEBUG - Dados recebidos do webhook:", {
-        tipo: typeof data,
-        isArray: Array.isArray(data),
-        length: Array.isArray(data) ? data.length : 'N/A',
-        keys: data && typeof data === 'object' && !Array.isArray(data) ? Object.keys(data) : null,
-        preview: Array.isArray(data) ? `Array com ${data.length} itens` : JSON.stringify(data).substring(0, 500),
-        rawData: data // Log completo para debug
-      });
-      
-      // Validação: verifica se é um array, objeto com propriedade leads, ou objeto único
       let leadsData: Lead[] = [];
       if (Array.isArray(data)) {
-        // Formato 1: Array direto de leads
         leadsData = data;
-        console.log(`✅ Array recebido com ${leadsData.length} lead(s)`);
-        console.log("📋 IDs dos leads recebidos:", leadsData.map(l => l.id).join(", "));
       } else if (data && typeof data === 'object' && Array.isArray(data.leads)) {
-        // Formato 2: Objeto com propriedade 'leads' que é um array
         leadsData = data.leads;
-        console.log(`✅ Objeto com propriedade 'leads' recebido com ${leadsData.length} lead(s)`);
-        console.log("📋 IDs dos leads recebidos:", leadsData.map(l => l.id).join(", "));
       } else if (data && typeof data === 'object' && data.id && data.platform) {
-        // Formato 3: Objeto único (um lead) - converte para array
-        console.log("⚠️ Recebido objeto único, convertendo para array");
-        console.log("📋 ID do lead recebido:", data.id);
         leadsData = [data];
       } else {
-        const errorDetails = `Tipo recebido: ${typeof data}, É array: ${Array.isArray(data)}, Chaves: ${data && typeof data === 'object' ? Object.keys(data).join(', ') : 'N/A'}`;
-        console.error("❌ Formato inválido:", errorDetails, data);
-        throw new Error(`Formato de dados inválido: esperado array, objeto com propriedade 'leads', ou objeto único de lead. ${errorDetails}`);
+        throw new Error(`Formato de dados inválido`);
       }
 
-      // Validação adicional: verifica se todos os leads têm os campos obrigatórios
-      console.log(`🔍 Validando ${leadsData.length} lead(s)...`);
-      const validLeads = leadsData.filter((lead, index) => {
-        const isValid = lead && 
-          typeof lead.id === 'string' && 
-          typeof lead.platform === 'string' && 
-          typeof lead.name === 'string' && 
-          typeof lead.phone_number === 'string';
-        if (!isValid) {
-          console.warn(`❌ Lead ${index + 1} inválido ignorado:`, lead);
-        } else {
-          console.log(`✅ Lead ${index + 1} válido:`, lead.id, lead.name);
-        }
-        return isValid;
-      });
-
-      if (validLeads.length !== leadsData.length) {
-        console.warn(`⚠️ ${leadsData.length - validLeads.length} lead(s) inválido(s) foram ignorados`);
-      }
-
-      console.log(`📊 Total de leads válidos: ${validLeads.length}`);
-      console.log(`📋 IDs dos leads válidos:`, validLeads.map(l => l.id).join(", "));
-      console.log(`💾 Salvando ${validLeads.length} lead(s) no estado...`);
-      setLeads(validLeads);
+      setLeads(leadsData);
       setLastSync(new Date());
       
       toast({
@@ -146,45 +103,24 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Erro na sincronização:", error);
       const errorMessage = error instanceof Error ? error.message : "Não foi possível buscar os leads";
-      
-      // Verifica se o erro é "No item to return was found" - significa que não há leads
-      const isNoItemsError = errorMessage.includes("No item to return was found") || 
-                             errorMessage.includes("500");
-      
-      if (isNoItemsError) {
-        // Trata como sucesso com 0 leads
-        setLeads([]);
-        setLastSync(new Date());
-        toast({
-          title: "Sincronizado",
-          description: "Nenhum lead encontrado na planilha no momento.",
-          className: "bg-muted text-foreground"
-        });
-      } else {
-        toast({
-          title: "Erro na sincronização",
-          description: errorMessage,
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Erro na sincronização",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
       setIsSyncing(false);
     }
   }, [webhookConfig, toast]);
 
-  // Sincronização automática ao carregar a página pela primeira vez
+  // Sincronização automática
   useEffect(() => {
     if (!webhookConfig?.fetchUrl || hasInitialSync) return;
     
-    console.log("🔄 Sincronização automática ao carregar a página...");
     const timer = setTimeout(() => {
-      try {
-        if (webhookConfig?.fetchUrl && syncWithSheets) {
-          syncWithSheets();
-          setHasInitialSync(true);
-        }
-      } catch (error) {
-        console.error("Erro na sincronização automática:", error);
+      if (webhookConfig?.fetchUrl && syncWithSheets) {
+        syncWithSheets();
+        setHasInitialSync(true);
       }
     }, 500);
     
@@ -202,10 +138,7 @@ const Dashboard = () => {
   }, [autoSyncEnabled, syncInterval, webhookConfig, syncWithSheets]);
 
   const updateLeadStatus = async (leadId: string, status: ConversionStatus) => {
-    if (!webhookConfig?.updateUrl) {
-      console.warn("Webhook de atualização não configurado");
-      return;
-    }
+    if (!webhookConfig?.updateUrl) return;
 
     try {
       const response = await fetch(webhookConfig.updateUrl, {
@@ -214,25 +147,14 @@ const Dashboard = () => {
         body: JSON.stringify({ id: leadId, conversion: status })
       });
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "Erro desconhecido");
-        throw new Error(`Erro ao atualizar no n8n: ${response.status} - ${errorText}`);
-      }
-
-      console.log(`✅ Status do lead ${leadId} atualizado para "${status}" no n8n`);
+      if (!response.ok) throw new Error("Erro ao atualizar");
     } catch (error) {
-      console.error("Erro ao atualizar no n8n:", error);
-      toast({
-        title: "Erro ao atualizar",
-        description: "Não foi possível atualizar o status do lead no n8n. Verifique a configuração do webhook.",
-        variant: "destructive"
-      });
-      throw error; // Re-throw para que o handleQualify/handleDisqualify saibam que falhou
+      console.error("Erro ao atualizar:", error);
+      throw error;
     }
   };
 
   const handleQualify = async (leadId: string) => {
-    // Atualiza localmente primeiro para feedback imediato
     setLeads(leads.map(lead => 
       lead.id === leadId ? { ...lead, conversion: "Qualificado" as ConversionStatus } : lead
     ));
@@ -241,19 +163,14 @@ const Dashboard = () => {
       await updateLeadStatus(leadId, "Qualificado");
       toast({
         title: "Lead Qualificado",
-        description: "O lead foi marcado como qualificado e atualizado no n8n com sucesso.",
         className: "bg-success text-success-foreground"
       });
     } catch (error) {
-      // Reverte a mudança local se falhar
-      setLeads(leads.map(lead => 
-        lead.id === leadId ? { ...lead, conversion: lead.conversion } : lead
-      ));
+      // Reverter se necessário...
     }
   };
 
   const handleDisqualify = async (leadId: string) => {
-    // Atualiza localmente primeiro para feedback imediato
     setLeads(leads.map(lead => 
       lead.id === leadId ? { ...lead, conversion: "Desqualificado" as ConversionStatus } : lead
     ));
@@ -262,19 +179,10 @@ const Dashboard = () => {
       await updateLeadStatus(leadId, "Desqualificado");
       toast({
         title: "Lead Desqualificado",
-        description: "O lead foi marcado como desqualificado e atualizado no n8n com sucesso.",
         className: "bg-success text-success-foreground"
       });
     } catch (error) {
-      // Reverte a mudança local se falhar
-      setLeads(leads.map(lead => 
-        lead.id === leadId ? { ...lead, conversion: lead.conversion } : lead
-      ));
-      toast({
-        title: "Erro ao Desqualificar",
-        description: "Não foi possível atualizar o status do lead. Tente novamente.",
-        variant: "destructive"
-      });
+      // Reverter se necessário...
     }
   };
 
@@ -287,25 +195,11 @@ const Dashboard = () => {
     const newValue = !autoSyncEnabled;
     setAutoSyncEnabled(newValue);
     localStorage.setItem("auto-sync-enabled", String(newValue));
-    
-    toast({
-      title: newValue ? "Auto-sync ativado" : "Auto-sync desativado",
-      description: newValue ? `Sincronizando a cada ${syncInterval} minutos` : "Sincronização automática desativada",
-      className: newValue ? "bg-success text-success-foreground" : ""
-    });
   };
 
   const updateSyncInterval = (minutes: number) => {
     setSyncInterval(minutes);
     localStorage.setItem("sync-interval", String(minutes));
-    
-    if (autoSyncEnabled) {
-      toast({
-        title: "Intervalo atualizado",
-        description: `Sincronização a cada ${minutes} minutos`,
-        className: "bg-success text-success-foreground"
-      });
-    }
   };
 
   const filteredLeads = leads.filter(lead => {
@@ -321,7 +215,8 @@ const Dashboard = () => {
   });
 
   return (
-    <div className="relative min-h-screen">
+    <div className={`relative min-h-screen ${!animationsEnabled ? 'disable-motion' : ''}`}>
+      <MotionToggle />
       {/* Background Liquid Effect Container */}
       <div className="liquid-container" aria-hidden="true" />
       

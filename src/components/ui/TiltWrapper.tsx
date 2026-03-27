@@ -7,6 +7,7 @@ import {
   useSpring,
 } from 'framer-motion';
 import { cn } from "@/lib/utils";
+import { useMotion } from "@/contexts/MotionContext";
 
 interface TiltWrapperProps {
   children: React.ReactNode;
@@ -14,45 +15,66 @@ interface TiltWrapperProps {
   intensity?: number;
 }
 
-export const TiltWrapper = ({ children, className, intensity = 3 }: TiltWrapperProps) => {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+export const TiltWrapper = ({ children, className, intensity = 4 }: TiltWrapperProps) => {
+  const { animationsEnabled } = useMotion();
+  
+  // Motion Values para a posição bruta do mouse
+  const x = useMotionValue(0.5);
+  const y = useMotionValue(0.5);
   const scale = useMotionValue(1);
 
-  // Física natural: stiffness alta para resposta rápida, damping baixo para bounce sutil, mass para inércia
-  const tiltSpring = { damping: 18, stiffness: 250, mass: 0.6 };
-  const mouseXSpring = useSpring(x, tiltSpring);
-  const mouseYSpring = useSpring(y, tiltSpring);
-  const scaleSpring = useSpring(scale, { damping: 22, stiffness: 320, mass: 0.4 });
+  // Springs para suavização
+  const xSpring = useSpring(x, { damping: 25, stiffness: 200 });
+  const ySpring = useSpring(y, { damping: 25, stiffness: 200 });
+  const scaleSpring = useSpring(scale, { damping: 25, stiffness: 200 });
 
-  // Lado hovado afunda (efeito de peso)
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [intensity, -intensity]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-intensity, intensity]);
+  // Transformações baseadas nas molas
+  const rotateX = useTransform(ySpring, [0, 1], [intensity, -intensity]);
+  const rotateY = useTransform(xSpring, [0, 1], [-intensity, intensity]);
 
-  const shineX = useTransform(mouseXSpring, [-0.5, 0.5], [100, 0]);
-  const shineY = useTransform(mouseYSpring, [-0.5, 0.5], [100, 0]);
+  // Efeito de brilho dinâmico no lado OPOSTO (para profundidade premium)
+  const shineX = useTransform(xSpring, [0, 1], [100, 0]);
+  const shineY = useTransform(ySpring, [0, 1], [100, 0]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!animationsEnabled) return;
+    
     const rect = e.currentTarget.getBoundingClientRect();
-    const xPct = (e.clientX - rect.left) / rect.width - 0.5;
-    const yPct = (e.clientY - rect.top) / rect.height - 0.5;
-    x.set(xPct);
-    y.set(yPct);
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    // Normalizar para 0-1
+    x.set(mouseX / rect.width);
+    y.set(mouseY / rect.height);
   };
 
   const handleMouseEnter = () => {
-    scale.set(1.01);
+    if (animationsEnabled) {
+      scale.set(1.02);
+    }
   };
 
   const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
+    // Retornar ao centro de forma suave
+    x.set(0.5);
+    y.set(0.5);
     scale.set(1);
   };
 
+  // Se as animações forem desligadas, resetamos os valores de entrada
+  React.useEffect(() => {
+    if (!animationsEnabled) {
+      x.set(0.5);
+      y.set(0.5);
+      scale.set(1);
+    }
+  }, [animationsEnabled, x, y, scale]);
+
   return (
-    // perspective no pai para distorção 3D correta
-    <div style={{ perspective: "1200px" }} className={cn("relative group", className)}>
+    <div 
+      className={cn("relative h-full w-full", className)}
+      style={{ perspective: "1500px" }}
+    >
       <motion.div
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
@@ -62,12 +84,11 @@ export const TiltWrapper = ({ children, className, intensity = 3 }: TiltWrapperP
           rotateY,
           scale: scaleSpring,
           transformStyle: "preserve-3d",
-          willChange: "auto",
-          backfaceVisibility: "hidden",
-          "--tilt-x": shineX,
-          "--tilt-y": shineY
+          // Passamos os valores das molas para as variáveis CSS
+          "--tilt-x": animationsEnabled ? shineX : 50,
+          "--tilt-y": animationsEnabled ? shineY : 50,
         } as any}
-        className="relative h-full w-full"
+        className="relative h-full w-full will-change-transform"
       >
         <div className="relative z-10 h-full w-full">
           {children}
