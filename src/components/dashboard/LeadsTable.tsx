@@ -68,7 +68,7 @@ export const LeadsTable = ({ leads, onLeadClick, onQualify, onDisqualify }: Lead
   }
 
   return (
-    <div className="liquid-glass overflow-hidden border border-white/10 shadow-2xl">
+    <div className="liquid-glass border border-white/10 shadow-2xl">
       <Table>
         <TableHeader className="bg-white/5">
           <TableRow className="hover:bg-transparent border-white/10">
@@ -112,7 +112,7 @@ export const LeadsTable = ({ leads, onLeadClick, onQualify, onDisqualify }: Lead
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 text-xs font-semibold text-emerald-400 border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-all"
+                    className="h-8 text-xs font-semibold text-emerald-400 border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-all hover:scale-105 active:scale-95"
                     onClick={() => onQualify(lead.id)}
                     disabled={lead.conversion === "Qualificado"}
                   >
@@ -121,7 +121,7 @@ export const LeadsTable = ({ leads, onLeadClick, onQualify, onDisqualify }: Lead
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 text-xs font-semibold text-rose-400 border-rose-500/30 hover:bg-rose-500 hover:text-white transition-all"
+                    className="h-8 text-xs font-semibold text-rose-400 border-rose-500/30 hover:bg-rose-500 hover:text-white transition-all hover:scale-105 active:scale-95"
                     onClick={() => onDisqualify(lead.id)}
                     disabled={lead.conversion === "Desqualificado"}
                   >
