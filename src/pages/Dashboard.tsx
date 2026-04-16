@@ -140,14 +140,17 @@ const Dashboard = () => {
   const updateLead = async (leadId: string, updates: Partial<Lead>) => {
     if (!webhookConfig?.updateUrl) return;
 
+    const fullLead = leads.find(l => l.id === leadId);
+    const payload = fullLead ? { ...fullLead, ...updates } : { id: leadId, ...updates };
+
     // Log para debug
-    console.log("Enviando atualização para o webhook:", { id: leadId, ...updates });
+    console.log("Enviando atualização para o webhook:", payload);
 
     try {
       const response = await fetch(webhookConfig.updateUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: leadId, ...updates })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) throw new Error("Erro ao atualizar no servidor");
