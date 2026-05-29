@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 import { useTheme } from "./hooks/use-theme";
 
@@ -19,6 +20,7 @@ const AppContent = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/reports" element={<Reports />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -28,13 +30,16 @@ const AppContent = () => {
 };
 
 import { MotionProvider } from "./contexts/MotionContext";
+import { LeadProvider } from "./contexts/LeadContext";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <MotionProvider>
-      <TooltipProvider>
-        <AppContent />
-      </TooltipProvider>
+      <LeadProvider>
+        <TooltipProvider>
+          <AppContent />
+        </TooltipProvider>
+      </LeadProvider>
     </MotionProvider>
   </QueryClientProvider>
 );

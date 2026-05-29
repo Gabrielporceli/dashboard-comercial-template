@@ -31,4 +31,21 @@ export interface Lead {
   ad_type?: string;
   conversion: ConversionStatus;
   hora_min?: string;
+  
+  // Novos campos adicionados para BI (n8n)
+  keyword?: string;
+  matchtype?: string;
+  network?: string;
+  lead_id?: string;
+  ad_id?: string;
+  adset_id?: string;
+  campaign_id?: string;
+  form_id?: string;
+  gender?: string;
+  age?: string | number;
+  
+  // Campos Comerciais (CRM)
+  product?: string;
+  obs?: string; // Mapeado para Motivo da Perda/Observações
+  temperature?: 'Frio' | 'Morno' | 'Quente';
 }

@@ -22,7 +22,8 @@ import {
   Target,
   Edit2,
   Check,
-  X
+  X,
+  DollarSign
 } from "lucide-react";
 
 interface LeadDetailModalProps {
@@ -235,6 +236,111 @@ export const LeadDetailModal = ({ lead, isOpen, onClose, onUpdate }: LeadDetailM
                     />
                   </div>
                 </div>
+
+                <div className="flex items-start gap-3 py-3 border-b border-white/5 last:border-0">
+                  <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Valor da Conversão (R$)</p>
+                    <EditableField
+                      value={formData.conversion_value?.toString() || lead.conversion_value?.toString() || ""}
+                      onSave={async (val) => {
+                        const numVal = val ? parseFloat(val.replace(',', '.')) : undefined;
+                        const updates = { ...formData, conversion_value: numVal };
+                        setFormData(updates);
+                        return onUpdate(lead.id, updates);
+                      }}
+                      className="text-sm font-medium mt-1 text-success"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 py-3 border-b border-white/5 last:border-0">
+                  <User className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Gênero</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <button
+                        onClick={async () => {
+                          const updates = { ...formData, gender: 'Sem Info' };
+                          setFormData(updates);
+                          return onUpdate(lead.id, updates);
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                          (formData.gender || lead.gender) === 'Sem Info' || !(formData.gender || lead.gender)
+                            ? 'bg-[#e2e2e2] text-[#4a4a4a]'
+                            : 'bg-white/5 text-muted-foreground hover:bg-[#e2e2e2]/80 hover:text-[#4a4a4a]'
+                        }`}
+                      >
+                        Sem Info
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const updates = { ...formData, gender: 'Homem' };
+                          setFormData(updates);
+                          return onUpdate(lead.id, updates);
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                          (formData.gender || lead.gender) === 'Homem'
+                            ? 'bg-[#0b54aa] text-white'
+                            : 'bg-[#0b54aa]/20 text-[#0b54aa] hover:bg-[#0b54aa]/80 hover:text-white'
+                        }`}
+                      >
+                        Homem
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const updates = { ...formData, gender: 'Mulher' };
+                          setFormData(updates);
+                          return onUpdate(lead.id, updates);
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                          (formData.gender || lead.gender) === 'Mulher'
+                            ? 'bg-[#ebd3f2] text-[#632970]'
+                            : 'bg-[#ebd3f2]/20 text-[#ebd3f2] hover:bg-[#ebd3f2]/80 hover:text-[#632970]'
+                        }`}
+                      >
+                        Mulher
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 py-3 border-b border-white/5 last:border-0">
+                  <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Idade</p>
+                    <EditableField
+                      value={formData.age?.toString() || lead.age?.toString() || ""}
+                      onSave={async (val) => {
+                        const updates = { ...formData, age: val };
+                        setFormData(updates);
+                        return onUpdate(lead.id, updates);
+                      }}
+                      className="text-sm font-medium mt-1"
+                      placeholder="Ex: 35"
+                    />
+                  </div>
+                </div>
+
+                {lead.conversion === 'Desqualificado' && (
+                  <div className="flex items-start gap-3 py-3 border-b border-white/5 last:border-0">
+                    <X className="w-5 h-5 text-destructive mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground">Motivo da Perda (Obs)</p>
+                      <EditableField
+                        value={formData.obs || lead.obs || ""}
+                        onSave={async (val) => {
+                          const updates = { ...formData, obs: val };
+                          setFormData(updates);
+                          return onUpdate(lead.id, updates);
+                        }}
+                        className="text-sm font-medium mt-1 text-destructive"
+                        placeholder="Ex: Achou caro, Concorrente, etc."
+                      />
+                    </div>
+                  </div>
+                )}
                 
                 <DetailRow icon={Fingerprint} label="Atendimento N°" value={lead.attendance_number} />
               </div>

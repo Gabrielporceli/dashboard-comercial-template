@@ -104,6 +104,17 @@ Cada lead **deve** conter os seguintes campos:
 - `thumbnail_url` (string): URL da miniatura
 - `ad_url` (string): URL do anúncio
 - `ad_type` (string): Tipo do anúncio
+- `hora_min` (string): Horário formatado ("HH:mm" ou "14:30")
+- `keyword` (string): Palavra-chave (Google Ads)
+- `matchtype` (string): Tipo de correspondência (Google Ads)
+- `network` (string): Rede de pesquisa/display (Google Ads)
+- `lead_id` (string): ID do lead no Meta
+- `ad_id` (string): ID do anúncio
+- `adset_id` (string): ID do conjunto de anúncios
+- `campaign_id` (string): ID da campanha
+- `form_id` (string): ID do formulário
+- `gender` (string): Gênero do lead (ex: "Masculino", "Feminino")
+- `age` (string/number): Idade do lead
 
 ## Exemplo Mínimo
 

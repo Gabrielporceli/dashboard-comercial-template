@@ -1,233 +1,46 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { MetricsCards } from "@/components/dashboard/MetricsCards";
 import { LeadFilters } from "@/components/dashboard/LeadFilters";
 import { LeadsTable } from "@/components/dashboard/LeadsTable";
 import { LeadDetailModal } from "@/components/dashboard/LeadDetailModal";
 import { SheetsConfig } from "@/components/dashboard/SheetsConfig";
 import { Lead, Platform, ConversionStatus } from "@/types/lead";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Clock } from "lucide-react";
 
 import { TiltWrapper } from "@/components/ui/TiltWrapper";
 import { MotionToggle } from "@/components/dashboard/MotionToggle";
+import { ReportsButton } from "@/components/dashboard/ReportsButton";
 import { useMotion } from "@/contexts/MotionContext";
+import { useLeads } from "@/contexts/LeadContext";
 
 const Dashboard = () => {
   const { animationsEnabled } = useMotion();
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const {
+    leads,
+    isSyncing,
+    lastSync,
+    webhookConfig,
+    autoSyncEnabled,
+    syncInterval,
+    syncWithSheets,
+    setWebhookConfig,
+    toggleAutoSync,
+    updateSyncInterval,
+    handleUpdateLead,
+    handleQualify,
+    handleDisqualify,
+  } = useLeads();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [platformFilter, setPlatformFilter] = useState<Platform | "Todos">("Todos");
   const [statusFilter, setStatusFilter] = useState<ConversionStatus | "Todos">("Todos");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [webhookConfig, setWebhookConfig] = useState<{ fetchUrl: string; updateUrl: string } | null>(null);
-  const [autoSyncEnabled, setAutoSyncEnabled] = useState(false);
-  const [syncInterval, setSyncInterval] = useState(5); // minutos
-  const [hasInitialSync, setHasInitialSync] = useState(false);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const saved = localStorage.getItem("n8n-webhook-config");
-    if (saved) {
-      try {
-        const config = JSON.parse(saved);
-        setWebhookConfig(config);
-      } catch (error) {
-        console.error("Erro ao carregar configuração:", error);
-      }
-    }
-    
-    const savedAutoSync = localStorage.getItem("auto-sync-enabled");
-    const savedInterval = localStorage.getItem("sync-interval");
-    if (savedAutoSync) setAutoSyncEnabled(savedAutoSync === "true");
-    if (savedInterval) {
-      const interval = parseInt(savedInterval);
-      if (!isNaN(interval)) setSyncInterval(interval);
-    }
-  }, []);
-
-  const syncWithSheets = useCallback(async () => {
-    if (!webhookConfig?.fetchUrl) {
-      toast({
-        title: "Configuração necessária",
-        description: "Configure os webhooks do n8n primeiro",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsSyncing(true);
-    try {
-      const response = await fetch(webhookConfig.fetchUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "Erro desconhecido");
-        throw new Error(`Erro ao sincronizar: ${response.status} - ${errorText}`);
-      }
-
-      // Tenta fazer parse do JSON
-      let data: any;
-      try {
-        const text = await response.text();
-        data = JSON.parse(text);
-      } catch (parseError) {
-        console.error("Erro ao fazer parse do JSON:", parseError);
-        throw new Error("Resposta não é JSON válido.");
-      }
-      
-      let leadsData: Lead[] = [];
-      if (Array.isArray(data)) {
-        leadsData = data;
-      } else if (data && typeof data === 'object' && Array.isArray(data.leads)) {
-        leadsData = data.leads;
-      } else if (data && typeof data === 'object' && data.id && data.platform) {
-        leadsData = [data];
-      } else {
-        throw new Error(`Formato de dados inválido`);
-      }
-
-      setLeads(leadsData);
-      setLastSync(new Date());
-      
-      toast({
-        title: "Sincronizado",
-        description: `${leadsData.length} lead(s) atualizado(s) com sucesso`,
-        className: "bg-success text-success-foreground"
-      });
-    } catch (error) {
-      console.error("Erro na sincronização:", error);
-      const errorMessage = error instanceof Error ? error.message : "Não foi possível buscar os leads";
-      toast({
-        title: "Erro na sincronização",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [webhookConfig, toast]);
-
-  // Sincronização automática
-  useEffect(() => {
-    if (!webhookConfig?.fetchUrl || hasInitialSync) return;
-    
-    const timer = setTimeout(() => {
-      if (webhookConfig?.fetchUrl && syncWithSheets) {
-        syncWithSheets();
-        setHasInitialSync(true);
-      }
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [webhookConfig?.fetchUrl, hasInitialSync, syncWithSheets]);
-
-  useEffect(() => {
-    if (!autoSyncEnabled || !webhookConfig?.fetchUrl) return;
-
-    const interval = setInterval(() => {
-      syncWithSheets();
-    }, syncInterval * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [autoSyncEnabled, syncInterval, webhookConfig, syncWithSheets]);
-
-  const updateLead = async (leadId: string, updates: Partial<Lead>) => {
-    if (!webhookConfig?.updateUrl) return;
-
-    const fullLead = leads.find(l => l.id === leadId);
-    const payload = fullLead ? { ...fullLead, ...updates } : { id: leadId, ...updates };
-
-    // Log para debug
-    console.log("Enviando atualização para o webhook:", payload);
-
-    try {
-      const response = await fetch(webhookConfig.updateUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) throw new Error("Erro ao atualizar no servidor");
-    } catch (error) {
-      console.error("Erro ao atualizar:", error);
-      throw error;
-    }
-  };
-
-  const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
-    // Atualização otimista
-    const previousLeads = [...leads];
-    setLeads(leads.map(lead => lead.id === leadId ? { ...lead, ...updates } : lead));
-    
-    try {
-      await updateLead(leadId, updates);
-      toast({
-        title: "Lead Atualizado",
-        description: "Informações foram salvas com sucesso.",
-        className: "bg-success text-success-foreground"
-      });
-    } catch (error) {
-      setLeads(previousLeads);
-      toast({
-        title: "Erro ao Salvar",
-        description: "Não foi possível atualizar o lead no sistema.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleQualify = async (leadId: string) => {
-    setLeads(leads.map(lead => 
-      lead.id === leadId ? { ...lead, conversion: "Qualificado" as ConversionStatus } : lead
-    ));
-    
-    try {
-      await updateLead(leadId, { conversion: "Qualificado" });
-      toast({
-        title: "Lead Qualificado",
-        className: "bg-success text-success-foreground"
-      });
-    } catch (error) {
-      // Reverter se necessário...
-    }
-  };
-
-  const handleDisqualify = async (leadId: string) => {
-    setLeads(leads.map(lead => 
-      lead.id === leadId ? { ...lead, conversion: "Desqualificado" as ConversionStatus } : lead
-    ));
-    
-    try {
-      await updateLead(leadId, { conversion: "Desqualificado" });
-      toast({
-        title: "Lead Desqualificado",
-        className: "bg-success text-success-foreground"
-      });
-    } catch (error) {
-      // Reverter se necessário...
-    }
-  };
 
   const handleLeadClick = (lead: Lead) => {
     setSelectedLead(lead);
     setIsModalOpen(true);
-  };
-
-  const toggleAutoSync = () => {
-    const newValue = !autoSyncEnabled;
-    setAutoSyncEnabled(newValue);
-    localStorage.setItem("auto-sync-enabled", String(newValue));
-  };
-
-  const updateSyncInterval = (minutes: number) => {
-    setSyncInterval(minutes);
-    localStorage.setItem("sync-interval", String(minutes));
   };
 
   const filteredLeads = leads.filter(lead => {
@@ -244,7 +57,10 @@ const Dashboard = () => {
 
   return (
     <div className={`relative min-h-screen ${!animationsEnabled ? 'disable-motion' : ''}`}>
-      <MotionToggle />
+      <div className="fixed top-8 left-8 z-[100] flex flex-col gap-4">
+        <MotionToggle />
+        <ReportsButton />
+      </div>
       {/* Background Liquid Effect Container */}
       <div className="liquid-container" aria-hidden="true" />
       
