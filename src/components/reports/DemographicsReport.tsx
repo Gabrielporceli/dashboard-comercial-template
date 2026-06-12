@@ -1,13 +1,37 @@
 import React from 'react';
 import { Lead } from '@/types/lead';
-import { getDevice, extractDDD, topNQual, getGeoFromIP } from '@/utils/analytics';
+import { getDevice, extractDDD, topNQual, getStateFromDDD } from '@/utils/analytics';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+
+const ChartTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: 'rgba(10,10,12,0.90)',
+      border: '1px solid rgba(255,255,255,0.07)',
+      borderRadius: '12px',
+      padding: '10px 14px',
+      backdropFilter: 'blur(20px)',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+      minWidth: '140px',
+    }}>
+      {label && <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginBottom: '8px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</p>}
+      {payload.map((entry: any, i: number) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: i < payload.length - 1 ? '5px' : 0 }}>
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: entry.color, flexShrink: 0 }} />
+          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>{entry.name}</span>
+          <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600, marginLeft: 'auto', paddingLeft: '12px' }}>{entry.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 interface Props {
   leads: Lead[];
 }
 
-const COLORS = ['#A855F7', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#64748B'];
+const COLORS = ['#6829c0', '#06b6d4', '#22c55e', '#f59e0b', '#ef4444', '#64748b'];
 
 export const DemographicsReport = ({ leads }: Props) => {
   
@@ -35,13 +59,13 @@ export const DemographicsReport = ({ leads }: Props) => {
   
   const topDDD = topNQual(dddRaw, 10);
 
-  // Geo (States)
+  // Geo (States via DDD)
   const stateRaw = leads.reduce((acc, lead) => {
-    const geo = getGeoFromIP(lead.ip_address);
-    if (geo.state === 'Não Identificado') return acc;
-    if (!acc[geo.state]) acc[geo.state] = { total: 0, qualificados: 0 };
-    acc[geo.state].total += 1;
-    if (lead.conversion === 'Qualificado') acc[geo.state].qualificados += 1;
+    const state = getStateFromDDD(lead.phone_number);
+    if (state === 'Não Identificado') return acc;
+    if (!acc[state]) acc[state] = { total: 0, qualificados: 0 };
+    acc[state].total += 1;
+    if (lead.conversion === 'Qualificado') acc[state].qualificados += 1;
     return acc;
   }, {} as Record<string, { total: number, qualificados: number }>);
 
@@ -67,37 +91,40 @@ export const DemographicsReport = ({ leads }: Props) => {
   }, {} as Record<string, { total: number, qualificados: number }>);
   const topAges = topNQual(ageRaw, 10);
 
-  const renderHorizontalBar = (data: any[], title: string, fillTotal: string, fillQual: string) => (
-    <div className="liquid-glass p-6 rounded-[2rem] border border-white/10 flex flex-col h-[350px]">
-      <h3 className="text-lg font-medium text-white mb-6 shrink-0">{title}</h3>
-      <div className="flex-1 min-h-0 w-full">
-        {data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} layout="vertical" margin={{ top: 0, right: 0, left: 30, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} />
-              <XAxis type="number" stroke="#ffffff50" tick={{fill: '#ffffff80', fontSize: 12}} />
-              <YAxis dataKey="nome" type="category" stroke="#ffffff50" tick={{fill: '#ffffff80', fontSize: 11}} width={40} />
-              <RechartsTooltip 
-                contentStyle={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                itemStyle={{ color: '#fff' }}
-              />
-              <Bar dataKey="qualificados" name="Qualificados" fill={fillQual} radius={[0, 4, 4, 0]} barSize={12} />
-              <Bar dataKey="total" name="Total" fill={fillTotal} radius={[0, 4, 4, 0]} barSize={12} />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">Sem dados suficientes</div>
-        )}
+  const renderHorizontalBar = (data: any[], title: string, _fillTotal: string, fillQual: string) => {
+    const chartData = data.map(d => ({
+      ...d,
+      naoQualificados: (d.total || 0) - (d.qualificados || 0),
+    }));
+    return (
+      <div className="liquid-glass p-6 rounded-xl border border-white/10 flex flex-col h-[350px]">
+        <h3 className="text-lg font-medium text-white mb-6 shrink-0">{title}</h3>
+        <div className="flex-1 min-h-0 w-full">
+          {data.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 8, left: 30, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                <XAxis type="number" stroke="transparent" tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis dataKey="nome" type="category" stroke="transparent" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }} width={40} axisLine={false} tickLine={false} />
+                <RechartsTooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                <Bar dataKey="qualificados" name="Qualificados" fill={fillQual} radius={[0, 0, 0, 0]} barSize={12} stackId="a" animationDuration={900} animationEasing="ease-out" />
+                <Bar dataKey="naoQualificados" name="Não Qualificados" fill="rgba(255,255,255,0.06)" radius={[0, 4, 4, 0]} barSize={12} stackId="a" animationDuration={900} animationEasing="ease-out" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground">Sem dados suficientes</div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
         {/* Distribuição por Dispositivo */}
-        <div className="liquid-glass p-6 rounded-[2rem] border border-white/10 h-[350px]">
+        <div className="liquid-glass p-6 rounded-xl border border-white/10 h-[350px]">
           <h3 className="text-lg font-medium text-white mb-6">Dispositivos</h3>
           <div className="h-[250px] w-full">
             {deviceData.length > 0 ? (
@@ -117,10 +144,7 @@ export const DemographicsReport = ({ leads }: Props) => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip 
-                    contentStyle={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                    itemStyle={{ color: '#fff' }}
-                  />
+                  <RechartsTooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
                   <Legend verticalAlign="bottom" height={36} iconType="circle" />
                 </PieChart>
               </ResponsiveContainer>
@@ -131,16 +155,16 @@ export const DemographicsReport = ({ leads }: Props) => {
         </div>
 
         {/* Top Estados */}
-        {renderHorizontalBar(topStates, "Top Estados (Performance)", "#3B82F6", "#A855F7")}
-        
+        {renderHorizontalBar(topStates, "Top Estados (Performance)", "#06b6d4", "#6829c0")}
+
         {/* Top DDDs */}
-        {renderHorizontalBar(topDDD, "Top DDDs (Volume e Qualificação)", "#3B82F6", "#10B981")}
+        {renderHorizontalBar(topDDD, "Top DDDs (Volume e Qualificação)", "#06b6d4", "#22c55e")}
 
         {/* Gênero */}
-        {renderHorizontalBar(topGenders, "Gênero", "#F59E0B", "#10B981")}
+        {renderHorizontalBar(topGenders, "Gênero", "#f59e0b", "#22c55e")}
 
         {/* Idade */}
-        {renderHorizontalBar(topAges, "Idade", "#EF4444", "#3B82F6")}
+        {renderHorizontalBar(topAges, "Idade", "#ef4444", "#06b6d4")}
       </div>
     </div>
   );

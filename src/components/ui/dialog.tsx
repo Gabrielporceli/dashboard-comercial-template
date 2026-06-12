@@ -3,7 +3,6 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { TiltWrapper } from "./TiltWrapper";
 
 const Dialog = DialogPrimitive.Root;
 
@@ -42,15 +41,13 @@ const DialogContent = React.forwardRef<
       )}
       {...props}
     >
-      <TiltWrapper>
-        <div className="liquid-glass border border-white/20 p-6 rounded-[2rem] w-full relative">
-          {children}
-          <DialogPrimitive.Close className="absolute right-6 top-6 rounded-full p-2 bg-white/5 hover:bg-white/10 text-white transition-all opacity-70 hover:opacity-100 focus:outline-none z-50">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        </div>
-      </TiltWrapper>
+      <div className="liquid-glass border border-white/20 p-6 rounded-xl w-full relative">
+        {children}
+        <DialogPrimitive.Close className="absolute right-6 top-6 rounded-full p-2 bg-white/5 hover:bg-white/10 text-white transition-all opacity-70 hover:opacity-100 focus:outline-none z-50">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </DialogPrimitive.Close>
+      </div>
     </DialogPrimitive.Content>
   </DialogPortal>
 ));

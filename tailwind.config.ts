@@ -92,6 +92,15 @@ export default {
 						800: '#111111',
 						900: '#171717'
 					}
+				},
+				// Porceli OS design tokens
+				Porceli: {
+					purple:     '#6829c0',
+					'gray-900': '#121212',
+					'gray-800': '#1e1e1e',
+					'gray-700': '#242424',
+					'gray-600': '#2a2a2a',
+					'gray-500': '#3a3a3a',
 				}
 			},
 			borderRadius: {
@@ -109,19 +118,29 @@ export default {
 					to: { height: '0' }
 				},
 				'fade-in': {
-					'0%': { opacity: '0', transform: 'translateY(10px)' },
+					'0%':   { opacity: '0', transform: 'translateY(8px)' },
 					'100%': { opacity: '1', transform: 'translateY(0)' }
 				},
 				'slide-in': {
-					'0%': { transform: 'translateX(-100%)' },
+					'0%':   { transform: 'translateX(-100%)' },
 					'100%': { transform: 'translateX(0)' }
+				},
+				'slide-in-right': {
+					'0%':   { transform: 'translateX(100%)' },
+					'100%': { transform: 'translateX(0)' }
+				},
+				shimmer: {
+					'0%':   { backgroundPosition: '-200% 0' },
+					'100%': { backgroundPosition: '200% 0' }
 				}
 			},
 			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
-				'fade-in': 'fade-in 0.3s ease-out',
-				'slide-in': 'slide-in 0.3s ease-out'
+				'accordion-down':  'accordion-down 0.2s ease-out',
+				'accordion-up':    'accordion-up 0.2s ease-out',
+				'fade-in':         'fade-in 0.2s ease-out',
+				'slide-in':        'slide-in 0.3s ease-out',
+				'slide-in-right':  'slide-in-right 0.3s ease-out',
+				shimmer:           'shimmer 1.5s infinite',
 			},
 			backgroundImage: {
 				'gradient-goat': 'linear-gradient(135deg, #6829c0 0%, #8B5CF6 100%)',

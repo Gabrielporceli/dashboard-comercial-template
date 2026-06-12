@@ -47,5 +47,4 @@ export interface Lead {
   // Campos Comerciais (CRM)
   product?: string;
   obs?: string; // Mapeado para Motivo da Perda/Observações
-  temperature?: 'Frio' | 'Morno' | 'Quente';
 }

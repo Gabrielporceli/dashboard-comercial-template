@@ -129,14 +129,19 @@ export const LeadDetailModal = ({ lead, isOpen, onClose, onUpdate }: LeadDetailM
   };
 
   const DetailRow = ({ icon: Icon, label, value }: { icon: any, label: string, value?: string | number }) => {
-    if (!value) return null;
-    
+    if (!value || value === "undefined" || value === "null") return null;
+
+    const strValue = value.toString();
+    const isLong = strValue.length > 50;
+
     return (
       <div className="flex items-start gap-3 py-3">
-        <Icon className="w-5 h-5 text-muted-foreground mt-0.5" />
-        <div className="flex-1">
+        <Icon className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+        <div className="flex-1 min-w-0">
           <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-sm font-medium text-foreground mt-1">{value}</p>
+          <p className={`mt-1 break-all ${isLong ? "text-xs font-mono text-white/40 leading-relaxed" : "text-sm font-medium text-foreground"}`}>
+            {strValue}
+          </p>
         </div>
       </div>
     );
@@ -242,15 +247,26 @@ export const LeadDetailModal = ({ lead, isOpen, onClose, onUpdate }: LeadDetailM
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Valor da Conversão (R$)</p>
                     <EditableField
-                      value={formData.conversion_value?.toString() || lead.conversion_value?.toString() || ""}
+                      value={
+                        (() => {
+                          const v = formData.conversion_value ?? lead.conversion_value;
+                          if (v == null || v === '') return '';
+                          const n = Number(v);
+                          return isNaN(n) ? String(v) : n.toFixed(2).replace('.', ',');
+                        })()
+                      }
                       onSave={async (val) => {
-                        const numVal = val ? parseFloat(val.replace(',', '.')) : undefined;
+                        // aceita "1.500,50" (BR) ou "1500.50" (EN)
+                        const cleaned = val.trim()
+                          .replace(/\./g, '')   // remove pontos de milhar
+                          .replace(',', '.');    // vírgula → ponto decimal
+                        const numVal = cleaned ? parseFloat(cleaned) : undefined;
                         const updates = { ...formData, conversion_value: numVal };
                         setFormData(updates);
                         return onUpdate(lead.id, updates);
                       }}
-                      className="text-sm font-medium mt-1 text-success"
-                      placeholder="0.00"
+                      className="text-sm font-medium mt-1 text-white"
+                      placeholder="0,00"
                     />
                   </div>
                 </div>
@@ -260,48 +276,42 @@ export const LeadDetailModal = ({ lead, isOpen, onClose, onUpdate }: LeadDetailM
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Gênero</p>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      <button
-                        onClick={async () => {
-                          const updates = { ...formData, gender: 'Sem Info' };
-                          setFormData(updates);
-                          return onUpdate(lead.id, updates);
-                        }}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                          (formData.gender || lead.gender) === 'Sem Info' || !(formData.gender || lead.gender)
-                            ? 'bg-[#e2e2e2] text-[#4a4a4a]'
-                            : 'bg-white/5 text-muted-foreground hover:bg-[#e2e2e2]/80 hover:text-[#4a4a4a]'
-                        }`}
-                      >
-                        Sem Info
-                      </button>
-                      <button
-                        onClick={async () => {
-                          const updates = { ...formData, gender: 'Homem' };
-                          setFormData(updates);
-                          return onUpdate(lead.id, updates);
-                        }}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                          (formData.gender || lead.gender) === 'Homem'
-                            ? 'bg-[#0b54aa] text-white'
-                            : 'bg-[#0b54aa]/20 text-[#0b54aa] hover:bg-[#0b54aa]/80 hover:text-white'
-                        }`}
-                      >
-                        Homem
-                      </button>
-                      <button
-                        onClick={async () => {
-                          const updates = { ...formData, gender: 'Mulher' };
-                          setFormData(updates);
-                          return onUpdate(lead.id, updates);
-                        }}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                          (formData.gender || lead.gender) === 'Mulher'
-                            ? 'bg-[#ebd3f2] text-[#632970]'
-                            : 'bg-[#ebd3f2]/20 text-[#ebd3f2] hover:bg-[#ebd3f2]/80 hover:text-[#632970]'
-                        }`}
-                      >
-                        Mulher
-                      </button>
+                      {[
+                        {
+                          value: 'Sem Info',
+                          label: 'Sem Info',
+                          active:   'bg-white/15 text-white/80 border border-white/20',
+                          inactive: 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/60',
+                        },
+                        {
+                          value: 'Homem',
+                          label: 'Homem',
+                          active:   'bg-blue-500/20 text-blue-300 border border-blue-500/30',
+                          inactive: 'bg-blue-500/5 text-blue-400/60 border border-blue-500/15 hover:bg-blue-500/15 hover:text-blue-300',
+                        },
+                        {
+                          value: 'Mulher',
+                          label: 'Mulher',
+                          active:   'bg-pink-500/20 text-pink-300 border border-pink-500/30',
+                          inactive: 'bg-pink-500/5 text-pink-400/60 border border-pink-500/15 hover:bg-pink-500/15 hover:text-pink-300',
+                        },
+                      ].map((opt) => {
+                        const current = formData.gender || lead.gender;
+                        const isActive = current === opt.value || (!current && opt.value === 'Sem Info');
+                        return (
+                          <button
+                            key={opt.value}
+                            onClick={async () => {
+                              const updates = { ...formData, gender: opt.value };
+                              setFormData(updates);
+                              return onUpdate(lead.id, updates);
+                            }}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${isActive ? opt.active : opt.inactive}`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
