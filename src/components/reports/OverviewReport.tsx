@@ -9,10 +9,20 @@ interface Props {
   leads: Lead[];
 }
 
+const toMoney = (v: any): number => {
+  if (v == null || v === '') return 0;
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  // suporta "1.500,50" (BR) e "1500.50" (EN)
+  const s = String(v).trim();
+  const cleaned = s.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+};
+
 export const OverviewReport = ({ leads }: Props) => {
   const totalLeads = leads.length;
   const qualifiedLeads = leads.filter(l => l.conversion === "Qualificado");
-  const revenueTotal = qualifiedLeads.reduce((acc, l) => acc + (l.conversion_value || 0), 0);
+  const revenueTotal = qualifiedLeads.reduce((acc, l) => acc + toMoney(l.conversion_value), 0);
   const averageTicket = qualifiedLeads.length > 0 ? revenueTotal / qualifiedLeads.length : 0;
   const conversionRate = totalLeads > 0 ? (qualifiedLeads.length / totalLeads) * 100 : 0;
 
@@ -58,7 +68,7 @@ export const OverviewReport = ({ leads }: Props) => {
     <div className="space-y-6">
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="liquid-glass p-6 rounded-[2rem] border border-white/10 flex flex-col gap-2">
+        <div className="liquid-glass p-6 rounded-xl border border-white/10 flex flex-col gap-2">
           <div className="flex items-center gap-3 text-muted-foreground mb-2">
             <div className="p-2 bg-goat-purple/10 rounded-xl">
               <DollarSign className="w-5 h-5 text-goat-purple" />
@@ -70,7 +80,7 @@ export const OverviewReport = ({ leads }: Props) => {
           </span>
         </div>
 
-        <div className="liquid-glass p-6 rounded-[2rem] border border-white/10 flex flex-col gap-2">
+        <div className="liquid-glass p-6 rounded-xl border border-white/10 flex flex-col gap-2">
           <div className="flex items-center gap-3 text-muted-foreground mb-2">
             <div className="p-2 bg-blue-500/10 rounded-xl">
               <Target className="w-5 h-5 text-blue-500" />
@@ -82,7 +92,7 @@ export const OverviewReport = ({ leads }: Props) => {
           </span>
         </div>
 
-        <div className="liquid-glass p-6 rounded-[2rem] border border-white/10 flex flex-col gap-2">
+        <div className="liquid-glass p-6 rounded-xl border border-white/10 flex flex-col gap-2">
           <div className="flex items-center gap-3 text-muted-foreground mb-2">
             <div className="p-2 bg-emerald-500/10 rounded-xl">
               <TrendingUp className="w-5 h-5 text-emerald-500" />
@@ -108,7 +118,7 @@ export const OverviewReport = ({ leads }: Props) => {
       )}
 
       {/* Chart */}
-      <div className="liquid-glass p-6 rounded-[2rem] border border-white/10">
+      <div className="liquid-glass p-6 rounded-xl border border-white/10">
         <h3 className="text-lg font-medium text-white mb-6">Evolução de Captação</h3>
         <div className="h-[350px] w-full">
           {evolutionData.length > 0 ? (
@@ -116,12 +126,12 @@ export const OverviewReport = ({ leads }: Props) => {
               <AreaChart data={evolutionData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
                   </linearGradient>
                   <linearGradient id="colorQual" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#A855F7" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#A855F7" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#6829c0" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#6829c0" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
@@ -131,8 +141,8 @@ export const OverviewReport = ({ leads }: Props) => {
                   contentStyle={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
                   itemStyle={{ color: '#fff' }}
                 />
-                <Area type="monotone" dataKey="total" name="Total de Leads" stroke="#3B82F6" fillOpacity={1} fill="url(#colorTotal)" />
-                <Area type="monotone" dataKey="qualificados" name="Leads Qualificados" stroke="#A855F7" fillOpacity={1} fill="url(#colorQual)" />
+                <Area type="monotone" dataKey="total" name="Total de Leads" stroke="#06b6d4" fillOpacity={1} fill="url(#colorTotal)" />
+                <Area type="monotone" dataKey="qualificados" name="Leads Qualificados" stroke="#6829c0" fillOpacity={1} fill="url(#colorQual)" />
               </AreaChart>
             </ResponsiveContainer>
           ) : (

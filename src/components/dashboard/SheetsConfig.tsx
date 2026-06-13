@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 interface WebhookConfig {
   fetchUrl: string;
   updateUrl: string;
+  backupFetchUrl?: string;
 }
 
 interface SheetsConfigProps {
@@ -39,6 +40,7 @@ export const SheetsConfig = ({
 }: SheetsConfigProps) => {
   const [fetchUrl, setFetchUrl] = useState("");
   const [updateUrl, setUpdateUrl] = useState("");
+  const [backupFetchUrl, setBackupFetchUrl] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -54,6 +56,7 @@ export const SheetsConfig = ({
       // Limpar os campos ao abrir o modal
       setFetchUrl("");
       setUpdateUrl("");
+      setBackupFetchUrl("");
     }
   }, [isOpen]);
 
@@ -66,6 +69,7 @@ export const SheetsConfig = ({
           const config = JSON.parse(saved);
           setFetchUrl(config.fetchUrl || "");
           setUpdateUrl(config.updateUrl || "");
+          setBackupFetchUrl(config.backupFetchUrl || "");
         } catch (error) {
           console.error("Erro ao carregar configuração:", error);
         }
@@ -111,7 +115,7 @@ export const SheetsConfig = ({
       return;
     }
 
-    const config = { fetchUrl, updateUrl };
+    const config = { fetchUrl, updateUrl, backupFetchUrl: backupFetchUrl || undefined };
     localStorage.setItem("n8n-webhook-config", JSON.stringify(config));
     onConfigSave(config);
     setIsOpen(false);
@@ -126,10 +130,13 @@ export const SheetsConfig = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="liquid-glass border-white/20 bg-white/5 hover:bg-white/10">
-          <Settings className="h-4 w-4 mr-2" />
+        <button
+          className="btn-spring h-11 px-6 rounded-2xl bg-[#6829c0] hover:bg-[#6829c0]/90 text-white font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:-translate-y-0.5 hover:scale-105"
+          style={{ boxShadow: '0 0 20px rgba(104, 41, 192, 0.3)' }}
+        >
+          <Settings className="h-3.5 w-3.5" />
           Configurar n8n
-        </Button>
+        </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
@@ -218,6 +225,22 @@ export const SheetsConfig = ({
                 />
                 <p className="text-xs text-muted-foreground">
                   Este webhook deve receber o ID e novo status do lead
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="backup">Webhook para Relatórios (Backup histórico)</Label>
+                <Input
+                  id="backup"
+                  placeholder="https://seu-n8n.app.n8n.cloud/webhook/get-backup-leads"
+                  value={backupFetchUrl}
+                  onChange={(e) => setBackupFetchUrl(e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Lê da aba Backup - Todos (histórico completo, incluindo convertidos removidos)
                 </p>
               </div>
             </div>

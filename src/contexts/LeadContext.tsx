@@ -5,16 +5,21 @@ import { useToast } from "@/hooks/use-toast";
 interface WebhookConfig {
   fetchUrl: string;
   updateUrl: string;
+  backupFetchUrl?: string;
 }
 
 interface LeadContextProps {
   leads: Lead[];
+  allLeads: Lead[];
   isSyncing: boolean;
+  isBackupSyncing: boolean;
   lastSync: Date | null;
+  lastBackupSync: Date | null;
   webhookConfig: WebhookConfig | null;
   autoSyncEnabled: boolean;
   syncInterval: number;
   syncWithSheets: () => Promise<void>;
+  syncAllLeads: () => Promise<void>;
   setWebhookConfig: (config: WebhookConfig | null) => void;
   toggleAutoSync: () => void;
   updateSyncInterval: (minutes: number) => void;
@@ -27,12 +32,16 @@ const LeadContext = createContext<LeadContextProps | undefined>(undefined);
 
 export const LeadProvider = ({ children }: { children: ReactNode }) => {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isBackupSyncing, setIsBackupSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [lastBackupSync, setLastBackupSync] = useState<Date | null>(null);
   const [webhookConfig, setWebhookConfig] = useState<WebhookConfig | null>(null);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(false);
   const [syncInterval, setSyncInterval] = useState(5); // minutos
   const [hasInitialSync, setHasInitialSync] = useState(false);
+  const [hasInitialBackupSync, setHasInitialBackupSync] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -118,19 +127,88 @@ export const LeadProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [webhookConfig, toast]);
 
+  const syncAllLeads = useCallback(async () => {
+    if (!webhookConfig?.backupFetchUrl) {
+      toast({
+        title: "Configuração necessária",
+        description: "Configure o webhook de backup do n8n primeiro",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsBackupSyncing(true);
+    try {
+      const response = await fetch(webhookConfig.backupFetchUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "Erro desconhecido");
+        throw new Error(`Erro ao sincronizar backup: ${response.status} - ${errorText}`);
+      }
+
+      let data: any;
+      try {
+        const text = await response.text();
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Resposta não é JSON válido.");
+      }
+
+      let leadsData: Lead[] = [];
+      if (Array.isArray(data)) {
+        leadsData = data;
+      } else if (data && typeof data === 'object' && Array.isArray(data.leads)) {
+        leadsData = data.leads;
+      }
+
+      setAllLeads(leadsData);
+      setLastBackupSync(new Date());
+
+      toast({
+        title: "Relatórios sincronizados",
+        description: `${leadsData.length} lead(s) histórico(s) carregado(s)`,
+        className: "bg-success text-success-foreground"
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível buscar o histórico";
+      toast({
+        title: "Erro no backup",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsBackupSyncing(false);
+    }
+  }, [webhookConfig, toast]);
+
   // Sincronização automática inicial
   useEffect(() => {
     if (!webhookConfig?.fetchUrl || hasInitialSync) return;
-    
+
     const timer = setTimeout(() => {
       if (webhookConfig?.fetchUrl && syncWithSheets) {
         syncWithSheets();
         setHasInitialSync(true);
       }
     }, 500);
-    
+
     return () => clearTimeout(timer);
   }, [webhookConfig?.fetchUrl, hasInitialSync, syncWithSheets]);
+
+  // Sincronização inicial do backup (relatórios)
+  useEffect(() => {
+    if (!webhookConfig?.backupFetchUrl || hasInitialBackupSync) return;
+
+    const timer = setTimeout(() => {
+      syncAllLeads();
+      setHasInitialBackupSync(true);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [webhookConfig?.backupFetchUrl, hasInitialBackupSync, syncAllLeads]);
 
   // Sincronização por intervalo
   useEffect(() => {
@@ -144,77 +222,78 @@ export const LeadProvider = ({ children }: { children: ReactNode }) => {
   }, [autoSyncEnabled, syncInterval, webhookConfig, syncWithSheets]);
 
   const updateLead = async (leadId: string, updates: Partial<Lead>) => {
-    if (!webhookConfig?.updateUrl) return;
+    if (!webhookConfig?.updateUrl) {
+      throw new Error("URL de atualização não configurada. Configure o webhook de atualização nas configurações do n8n.");
+    }
 
     const fullLead = leads.find(l => l.id === leadId);
     const payload = fullLead ? { ...fullLead, ...updates } : { id: leadId, ...updates };
 
-    console.log("Enviando atualização para o webhook:", payload);
+    console.log("[updateLead] Enviando payload:", payload);
 
-    try {
-      const response = await fetch(webhookConfig.updateUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+    const response = await fetch(webhookConfig.updateUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-      if (!response.ok) throw new Error("Erro ao atualizar no servidor");
-    } catch (error) {
-      console.error("Erro ao atualizar:", error);
-      throw error;
-    }
+    const responseText = await response.text().catch(() => "");
+    console.log("[updateLead] Resposta:", response.status, responseText);
+
+    if (!response.ok) throw new Error(`Erro ao atualizar no servidor (${response.status}): ${responseText}`);
   };
 
   const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
     const previousLeads = [...leads];
-    setLeads(leads.map(lead => lead.id === leadId ? { ...lead, ...updates } : lead));
-    
+    setLeads(prev => prev.map(lead => lead.id === leadId ? { ...lead, ...updates } : lead));
+
     try {
       await updateLead(leadId, updates);
       toast({
         title: "Lead Atualizado",
-        description: "Informações foram salvas com sucesso.",
+        description: "Informações salvas na planilha com sucesso.",
         className: "bg-success text-success-foreground"
       });
     } catch (error) {
       setLeads(previousLeads);
+      const msg = error instanceof Error ? error.message : "Não foi possível atualizar o lead.";
       toast({
         title: "Erro ao Salvar",
-        description: "Não foi possível atualizar o lead no sistema.",
+        description: msg,
         variant: "destructive"
       });
     }
   };
 
   const handleQualify = async (leadId: string) => {
-    setLeads(leads.map(lead => 
+    const previousLeads = [...leads];
+    setLeads(prev => prev.map(lead =>
       lead.id === leadId ? { ...lead, conversion: "Qualificado" as ConversionStatus } : lead
     ));
-    
+
     try {
       await updateLead(leadId, { conversion: "Qualificado" });
-      toast({
-        title: "Lead Qualificado",
-        className: "bg-success text-success-foreground"
-      });
+      toast({ title: "Lead Qualificado", className: "bg-success text-success-foreground" });
     } catch (error) {
-      // Reverter se necessário...
+      setLeads(previousLeads);
+      const msg = error instanceof Error ? error.message : "Não foi possível qualificar o lead.";
+      toast({ title: "Erro ao Qualificar", description: msg, variant: "destructive" });
     }
   };
 
   const handleDisqualify = async (leadId: string) => {
-    setLeads(leads.map(lead => 
+    const previousLeads = [...leads];
+    setLeads(prev => prev.map(lead =>
       lead.id === leadId ? { ...lead, conversion: "Desqualificado" as ConversionStatus } : lead
     ));
-    
+
     try {
       await updateLead(leadId, { conversion: "Desqualificado" });
-      toast({
-        title: "Lead Desqualificado",
-        className: "bg-success text-success-foreground"
-      });
+      toast({ title: "Lead Desqualificado", className: "bg-success text-success-foreground" });
     } catch (error) {
-      // Reverter se necessário...
+      setLeads(previousLeads);
+      const msg = error instanceof Error ? error.message : "Não foi possível desqualificar o lead.";
+      toast({ title: "Erro ao Desqualificar", description: msg, variant: "destructive" });
     }
   };
 
@@ -233,12 +312,16 @@ export const LeadProvider = ({ children }: { children: ReactNode }) => {
     <LeadContext.Provider
       value={{
         leads,
+        allLeads,
         isSyncing,
+        isBackupSyncing,
         lastSync,
+        lastBackupSync,
         webhookConfig,
         autoSyncEnabled,
         syncInterval,
         syncWithSheets,
+        syncAllLeads,
         setWebhookConfig,
         toggleAutoSync,
         updateSyncInterval,

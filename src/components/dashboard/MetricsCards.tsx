@@ -1,7 +1,5 @@
-import { Card } from "@/components/ui/card";
 import { Users, CheckCircle2, XCircle, TrendingUp } from "lucide-react";
 import { Lead } from "@/types/lead";
-import { TiltWrapper } from "@/components/ui/TiltWrapper";
 
 interface MetricsCardsProps {
   leads: Lead[];
@@ -49,19 +47,17 @@ export const MetricsCards = ({ leads }: MetricsCardsProps) => {
       {metrics.map((metric, index) => {
         const Icon = metric.icon;
         return (
-          <TiltWrapper key={index}>
-            <Card className="dashboard-glow liquid-glass p-6 cursor-default">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1 uppercase tracking-wider font-semibold">{metric.title}</p>
-                  <p className="text-3xl font-bold text-foreground tracking-tight">{metric.value}</p>
-                </div>
-                <div className={`${metric.bgColor} p-3 rounded-xl border border-white/5`}>
-                  <Icon className={`w-6 h-6 ${metric.iconColor}`} />
-                </div>
+          <div key={index} className="dashboard-glow liquid-glass p-6 cursor-default rounded-xl border border-white/10">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1 uppercase tracking-wider font-semibold">{metric.title}</p>
+                <p className="text-3xl font-bold text-foreground tracking-tight">{metric.value}</p>
               </div>
-            </Card>
-          </TiltWrapper>
+              <div className={`${metric.bgColor} p-3 rounded-xl border border-white/5`}>
+                <Icon className={`w-6 h-6 ${metric.iconColor}`} />
+              </div>
+            </div>
+          </div>
         );
       })}
     </div>
