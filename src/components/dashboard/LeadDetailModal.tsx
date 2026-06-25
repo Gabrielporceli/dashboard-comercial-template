@@ -23,7 +23,8 @@ import {
   Edit2,
   Check,
   X,
-  DollarSign
+  DollarSign,
+  Search
 } from "lucide-react";
 
 interface LeadDetailModalProps {
@@ -385,6 +386,7 @@ export const LeadDetailModal = ({ lead, isOpen, onClose, onUpdate }: LeadDetailM
               <DetailRow icon={Activity} label="Campanha" value={lead.campaign} />
               <DetailRow icon={Activity} label="Conjunto de Anúncios" value={lead.ad_set} />
               <DetailRow icon={Activity} label="Anúncio" value={lead.ad} />
+              <DetailRow icon={Search} label="Palavra-chave" value={lead.keyword} />
               <DetailRow icon={Activity} label="Source ID" value={lead.source_id} />
             </div>
           </div>
